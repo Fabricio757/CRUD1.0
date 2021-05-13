@@ -161,7 +161,8 @@
     }),
 
     computed: {
-      ...Vuex.mapState(['usuarioLogueado', 'animales', 'pageName']),
+      ...Vuex.mapState(['usuarioLogueado', 'pageName']),
+      ...Vuex.mapGetters(['animalesAcc']),
       formTitle () {
         return this.editedIndex === -1 ? 'New Item' : 'Edit Item'
       },
@@ -177,7 +178,7 @@
     },
 
     created () {
-      this.getAll()
+      this.getAves()
     },
     mounted:      
       function() { 
@@ -185,15 +186,14 @@
       },
     methods: {
        ...Vuex.mapMutations(['setPageName']),
-       getAll: async function(){
+       getAves: async function(){
             
-            this.animales.resetOperaciones();
-            this.animales.addOperacion("Seleccion", "Aves", null);
-            var body = this.animales.prepareBody();
+            this.animalesAcc.resetOperaciones();
+            this.animalesAcc.addOperacion("Seleccion", "Aves", null);
+            var body = this.animalesAcc.prepareBody();
 
-
-            var response = await this.animales.execute(this.usuarioLogueado, body);
-            this.aves = response[0][1];
+            var response = await this.animalesAcc.execute(body);
+            this.aves = response;
         },
       initialize () {
         this.desserts = [

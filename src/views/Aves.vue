@@ -31,25 +31,26 @@ export default {
         }
     },
     computed: {
-    ...Vuex.mapState(['usuarioLogueado', 'animales', 'pageName']),
+    ...Vuex.mapState(['usuarioLogueado', 'pageName']),
+    ...Vuex.mapGetters(['animalesAcc']),
     },
     methods:{
         ...Vuex.mapMutations(['setPageName']),
-        getAll: async function(){
+        getAves: async function(){  
+
+            this.animalesAcc.resetOperaciones();
+            this.animalesAcc.addOperacion("Seleccion", "Aves", null);
+            var body = this.animalesAcc.prepareBody();
+
+            var response = await this.animalesAcc.execute(body);
+            this.aves = response;
             
-            this.animales.resetOperaciones();
-            this.animales.addOperacion("Seleccion", "Aves", null);
-            var body = this.animales.prepareBody();
-
-
-            var response = await this.animales.execute(this.usuarioLogueado, body);
-            this.aves = response[0][1];
         }
     },
     mounted:      
       async function() { 
         this.setPageName("Aves");
-        await this.getAll();
+        await this.getAves();
       }
 }
 </script>

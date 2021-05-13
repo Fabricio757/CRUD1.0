@@ -5,22 +5,22 @@ import { Principal } from "../api/Endpoint";
 
 Vue.use(Vuex)
 
-function handleResponse(response) {
-  return response.text().then(text => {
-      const data = text && JSON.parse(text);
-      if (!response.ok) {
-          if (response.status === 401) {
-              // auto logout if 401 response returned from api
-              //logout();
-              location.reload(true);
-          }
+// function handleResponse(response) {
+//   return response.text().then(text => {
+//       const data = text && JSON.parse(text);
+//       if (!response.ok) {
+//           if (response.status === 401) {
+//               // auto logout if 401 response returned from api
+//               //logout();
+//               location.reload(true);
+//           }
 
-          const error = (data && data.message) || response.statusText;
-          return Promise.reject(error);
-      }
-      return data;
-  });
-}
+//           const error = (data && data.message) || response.statusText;
+//           return Promise.reject(error);
+//       }
+//       return data;
+//   });
+// }
 
 
 
@@ -28,6 +28,7 @@ let Acceso = class {
   constructor(base) {
     this.BaseDatos = base;
     this.operaciones = [];
+    this.UsuarioLogueado = '';
   }
   addOperacion (operacion, tabla, args)
   {
@@ -61,34 +62,36 @@ let Acceso = class {
       return body;
   }
 
-  async execute (usuarioLogueado, inputText)
+  async execute (inputText)
   {
+    try{
+          if(this.usuarioLogueado)
+          {
+              let myvalue =JSON.stringify(inputText);
 
-    if(usuarioLogueado)
+              const requestOptions = {
+                  method: 'POST',
+                  headers: {
+                              'Authorization': 'Bearer ' + this.usuarioLogueado.token,
+                              'Content-Type' : 'application/json'
+                          },
+                  body: myvalue
+              };
+      
+              const response = await fetch(Principal.END_POINT + "Db/Input", requestOptions);
+              const json = await response.json();
+              return json.resultados[0][1];
+            
+          } else 
+          {
+              return null;
+          }
+       }
+    catch
     {
-        let myvalue =JSON.stringify(inputText);
-        console.log("myvalue");
-        console.log(myvalue);
-        const requestOptions = {
-            method: 'POST',
-            headers: {
-                        'Authorization': 'Bearer ' + usuarioLogueado.token,
-                        'Content-Type' : 'application/json'
-                     },
-            body: myvalue
-        };
-
-        return await fetch(Principal.END_POINT + "Db/Input", requestOptions).then(handleResponse)
-        .then(res => {
-            return res.resultados;
-        });
-
-    } else 
-    {
-        return null;
+      return null;
     }
   }
-
 };
 
 export default new Vuex.Store({
@@ -96,6 +99,9 @@ export default new Vuex.Store({
     usuarioLogueado: "",
     animales: new Acceso("'TestDB'"),
     pageName: "Home",
+  },
+  getters: {
+      animalesAcc: state => { state.animales.usuarioLogueado = state.usuarioLogueado; return state.animales }
   },
   mutations: {
     setUsuarioLogueado (state, user) {
@@ -109,5 +115,6 @@ export default new Vuex.Store({
   actions: {
   },
   modules: {
+    
   }
 })
