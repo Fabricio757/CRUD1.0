@@ -51,7 +51,7 @@ let Acceso = class {
             bodyOp += "{'Op': '" + item[0] + "', 'tabla': '" + item[1] + "' }";
           }
           else{
-            bodyOp += "{'Op': '" + item[0] + "', 'tabla': '" + item[1] + "', 'args': [" + item[2] + "] }";
+            bodyOp += "{'Op': '" + item[0] + "', 'tabla': '" + item[1] + "', 'args': " + item[2] + " }";
           }
           
         }
@@ -62,11 +62,12 @@ let Acceso = class {
       return body;
   }
 
-  async execute (inputText)
+  async execute ()
   {
     try{
           if(this.usuarioLogueado)
           {
+              var inputText = this.prepareBody(inputText);
               let myvalue =JSON.stringify(inputText);
 
               const requestOptions = {
@@ -79,17 +80,22 @@ let Acceso = class {
               };
       
               const response = await fetch(Principal.END_POINT + "Db/Input", requestOptions);
+              console.log(response);
               const json = await response.json();
-              return json.resultados[0][1];
+              console.log(json);
+              return json;
             
           } else 
           {
-              return null;
+              return {"resultados": [{"1": {"Error": "login failed"}}], "error": "true"};
           }
        }
-    catch
+    catch(error)
     {
-      return null;
+      var args = [];
+      args.push({'error': error.message});
+      console.log(error.message);
+      return {"resultados": [{"1": {"Error": JSON.stringify(args)}}], "error": "true"};
     }
   }
 };

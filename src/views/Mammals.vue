@@ -10,50 +10,45 @@
 </template>
 
 <script>
-import Vue from 'vue'
-import Vuex from 'vuex'
+  import Vue from 'vue'
+  import Vuex from 'vuex'
 
-Vue.use(Vuex);
+  Vue.use(Vuex);
 
-export default {
-    data(){
-        return {
-            headers: [
-                {
-                    text: 'ID',
-                    align: 'start',
-                    sortable: false,
-                    value: 'id',
-                },
-                { text: 'Especie', value: 'nombre' },
-                ],
-            mammals: [],
-        }
+
+  export default {
+    data () {
+      return {
+        headers: [
+          {
+            text: 'ID',
+            align: 'start',
+            sortable: false,
+            value: 'id',
+          },
+          { text: 'nombre', value: 'nombre' },
+        ],
+        mammals: [],
+      }
     },
-    computed: {
-    ...Vuex.mapState(['usuarioLogueado', 'pageName']),
-    ...Vuex.mapGetters(['animalesAcc']),
+    computed:{
+        ...Vuex.mapGetters(['animalesAcc']),
     },
     methods:{
-        ...Vuex.mapMutations(['setPageName']),
         getMammals: async function(){
             
             this.animalesAcc.resetOperaciones();
             this.animalesAcc.addOperacion("Seleccion", "Mamiferos", null);
-            var body = this.animalesAcc.prepareBody();
 
-
-            var response = await this.animalesAcc.execute(body);
-            this.mammals = response;
+            var response = await this.animalesAcc.execute();
+            if(response.error === "false"){
+              this.mammals = response.resultados[0][1];
+            }
         }
     },
-    mounted:
-      
+    mounted:      
       async function() { 
-          this.setPageName("Mamíferos");
         await this.getMammals();
       }
-}
+  }
 </script>
-
-

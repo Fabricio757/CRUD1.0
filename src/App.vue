@@ -2,7 +2,7 @@
   <v-app>
     <v-toolbar app dense class="primary">
       <v-app-bar-nav-icon @click="drawer = !drawer"></v-app-bar-nav-icon>
-      <v-toolbar-title>CRUD1.0 {{ $store.state.pageName }}</v-toolbar-title>
+      <v-toolbar-title>CRUD1.0 </v-toolbar-title>
       <v-spacer></v-spacer>
       <Login></Login>
     </v-toolbar>
