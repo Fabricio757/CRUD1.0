@@ -3,25 +3,7 @@ import Vuex from 'vuex'
 import { Principal } from "../api/Endpoint";
 
 
-Vue.use(Vuex)
-
-// function handleResponse(response) {
-//   return response.text().then(text => {
-//       const data = text && JSON.parse(text);
-//       if (!response.ok) {
-//           if (response.status === 401) {
-//               // auto logout if 401 response returned from api
-//               //logout();
-//               location.reload(true);
-//           }
-
-//           const error = (data && data.message) || response.statusText;
-//           return Promise.reject(error);
-//       }
-//       return data;
-//   });
-// }
-
+Vue.use(Vuex);
 
 
 let Acceso = class {
@@ -80,9 +62,7 @@ let Acceso = class {
               };
       
               const response = await fetch(Principal.END_POINT + "Db/Input", requestOptions);
-              console.log(response);
               const json = await response.json();
-              console.log(json);
               return json;
             
           } else 
@@ -104,10 +84,12 @@ export default new Vuex.Store({
   state: {
     usuarioLogueado: "",
     animales: new Acceso("'TestDB'"),
-    pageName: "Home",
+    pageName: "default",
+    snackbar: {"show":false},
   },
   getters: {
-      animalesAcc: state => { state.animales.usuarioLogueado = state.usuarioLogueado; return state.animales }
+      animalesAcc: state => { state.animales.usuarioLogueado = state.usuarioLogueado; return state.animales },
+      //snackbar: state => {return state.snackbar},
   },
   mutations: {
     setUsuarioLogueado (state, user) {
@@ -116,9 +98,16 @@ export default new Vuex.Store({
     },
     setPageName (state, pagename) {
       state.pageName = pagename;
-    }
+    },
+    SET_SNACKBAR(state, snackbar) {      
+      snackbar.show = true;
+      state.snackbar = snackbar;   
+    },
   },
   actions: {
+    showSnackbar({commit}, snackbar) {
+      commit('SET_SNACKBAR', snackbar);
+    },
   },
   modules: {
     

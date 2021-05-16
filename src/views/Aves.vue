@@ -171,30 +171,30 @@
         val || this.closeDelete()
       },
     },
-    mounted:      
-      function() { 
-        this.getAves()
-        this.setPageName("Home");
-      },
     methods: {
        ...Vuex.mapMutations(['setPageName']),
+       ...Vuex.mapActions(['showSnackbar']),
        getAves: async function(){
-            
-            this.animalesAcc.resetOperaciones();
-            this.animalesAcc.addOperacion("Seleccion", "Aves", null);
-            //var body = this.animalesAcc.prepareBody();
+            try{
+              this.animalesAcc.resetOperaciones();
+              this.animalesAcc.addOperacion("Seleccion", "Aves", null);
 
-            var response = await this.animalesAcc.execute();
-            if(response.error === "false"){
-              this.aves = response.resultados[0][1];
+              var response = await this.animalesAcc.execute();
+              if(response.error === "false"){
+                this.aves = response.resultados[0][1];
+              }
+              else{
+                this.showSnackbar({text: response.resultados[0][1], type:"Error"});
+              }
             }
-            else{
-              alert(response.resultados[0][1].Error);
+            catch(error) {
+              this.showSnackbar({text: error.message, type:"Error"});
             }
         },
       initialize () {
 
       },
+
       editItem (item) {
         this.editedIndex = this.aves.indexOf(item)
         this.editedItem = Object.assign({}, item)
@@ -217,10 +217,11 @@
         this.animalesAcc.addOperacion("Delete", "Aves", JSON.stringify(args));
         response = await this.animalesAcc.execute();
 
-        this.aves.splice(this.editedIndex, 1)
-
         if(response.error === "true"){
-           alert(response.resultados[0][1].Error);
+           this.showSnackbar({text: response.resultados[0][1], type:"Error"});
+        }else{
+          this.showSnackbar({text: "deleted", type:"Normal"});
+          this.aves.splice(this.editedIndex, 1)          
         }
         
         this.closeDelete()
@@ -246,29 +247,43 @@
       async save () {
         var response = '';
         var args = [];
-        if (this.editedIndex > -1) {
+        var idEdit = (this.editedIndex > -1 ? true : false);
+        if (idEdit) {
           this.animalesAcc.resetOperaciones();
           args = [];
           args.push({'id': this.editedItem.id, 'key': 'int'});
           args.push({ 'especie' : this.editedItem.especie, 'type':'string'});
           this.animalesAcc.addOperacion("Update", "Aves", JSON.stringify(args));
           response = await this.animalesAcc.execute();
-          Object.assign(this.aves[this.editedIndex], this.editedItem)
+
         } else {
           this.animalesAcc.resetOperaciones();
           args = [];
           //args.push({'id': this.editedItem.id, 'key': 'int'});
           args.push({ 'especie' : this.editedItem.especie, 'type':'string'});
           this.animalesAcc.addOperacion("Insert", "Aves", JSON.stringify(args));
-          response = await this.animalesAcc.execute();
-
-          this.aves.push(this.editedItem)
+          response = await this.animalesAcc.execute();          
         }
         if(response.error === "true"){
-           alert(response.resultados[0][1].Error);
+            this.showSnackbar({text: response.resultados[0][1], type:"Error"});           
+        }else{
+          if (idEdit) {
+            Object.assign(this.aves[this.editedIndex], this.editedItem);
+            this.showSnackbar({text: "saved", type:"Normal"});
+          }else
+          {
+            this.aves.push(this.editedItem);
+            this.showSnackbar({text: "added", type:"Normal"});
+          }
         }
         this.close()
       },
     },
+    mounted:      
+      function() { 
+        this.getAves()
+        this.setPageName("Aves");
+        this.showSnackbar({text: 'Open Aves', type: 'Normal'});
+      },
   }
 </script>

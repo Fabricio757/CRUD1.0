@@ -1,23 +1,13 @@
 <template>
-  <v-card
-    :loading="loading"
-    class="mx-auto my-12"
-    max-width="374"
-  >
-    <template slot="progress">
-      <v-progress-linear
-        color="deep-purple"
-        height="10"
-        indeterminate
-      ></v-progress-linear>
-    </template>
+  <div class="d-flex flex-column justify-space-between align-center">
+
 
     <v-img
-      height="250"
-      src="https://cdn.vuetifyjs.com/images/cards/cooking.png"
+      :aspect-ratio="16/9"
+      :width="width"
+      src="https://cdn.vuetifyjs.com/images/parallax/material.jpg"
     ></v-img>
-  </v-card>
-    
+  </div>
 </template>
 
 <script>
@@ -28,6 +18,20 @@
 
 
   export default {
-   
+    data: () => ({
+      width: 300,
+    }),
+    computed:{
+
+    },
+    methods:{
+      ...Vuex.mapMutations(['setPageName']),
+      ...Vuex.mapActions(['showSnackbar']),
+    },
+    mounted:      
+      function() { 
+        this.setPageName("Home");
+        this.showSnackbar({text: 'Open Home',type: 'Normal'})
+      },
   }
 </script>
