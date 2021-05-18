@@ -1,35 +1,7 @@
-<!-- <template>
-
-    <div>
-        <b-container class="login mt-3">
-            <b-row>
-                <b-col></b-col>
-                <b-col>
-                    <b-form>
-                        <b-row align-h="center" class="mr-3 ml-3">
-                            <b-form-input type="text" placeholder="Usuario" v-model="usuario"></b-form-input>
-                        </b-row>
-
-                        <b-row align-h="center" class="m-3">
-                            <b-form-input type="text" placeholder="Password" v-model="password"></b-form-input>
-                        </b-row>
-
-                        <b-row align-h="center" class="m-3">
-                            <b-button class="p-3 m-3" pill variant="outline-primary" @click="authenticate">Login</b-button> 
-                            <b-button class="p-3 m-3" pill variant="outline-primary" @click="$router.go(-1)">Cancel</b-button>
-                        </b-row>
-                    </b-form>
-                </b-col>
-                <b-col></b-col>
-            </b-row>
-            <b-alert :show="showvar" v-text="messagevar" variant="danger">Default Alert</b-alert>
-        </b-container>
-    </div> 
-</template>-->
-
 <template>
 <v-container style="max-width:200px;">
-    <v-row class="warning" justify="end" align="center">        
+    <v-row class="warning" justify="end" align="center"> 
+    
         <v-label>{{ nombre }}</v-label>
         <v-btn icon>
             <v-icon class="warning" @click="dialog=true">{{icons.mdiAccount}}</v-icon>
@@ -39,47 +11,47 @@
         persistent
         max-width="600px"
         >
-        <v-card>
+        <v-card @keyup.enter="authenticate">
             <v-card-title>
             <span class="headline">Login</span>
             </v-card-title>
             <v-card-text>
-            <v-container>
-                <v-row>
-                <v-col cols="12">
-                    <v-text-field
-                    label="Usuario"
-                    required
-                    v-model="usuario"
-                    ></v-text-field>
-                </v-col>
-                <v-col cols="12">
-                    <v-text-field
-                    label="Password"
-                    type="password"
-                    required
-                    v-model="password"
-                    ></v-text-field>
-                </v-col>
-                </v-row>
-            </v-container>
+                <v-container>
+                    <v-row>
+                    <v-col cols="12">
+                        <v-text-field
+                        label="Usuario"
+                        required
+                        v-model="usuario"
+                        ></v-text-field>
+                    </v-col>
+                    <v-col cols="12">
+                        <v-text-field
+                        label="Password"
+                        type="password"
+                        required
+                        v-model="password"
+                        ></v-text-field>
+                    </v-col>
+                    </v-row>
+                </v-container>
             </v-card-text>
             <v-card-actions>
-            <v-spacer></v-spacer>
-            <v-btn
-                color="blue darken-1"
-                text
-                @click="dialog = false"
-            >
-                Cancelar
-            </v-btn>
-            <v-btn
-                color="blue darken-1"
-                text
-                @click="authenticate"
-            >
-                Aceptar
-            </v-btn>
+                <v-spacer></v-spacer>
+                <v-btn
+                    color="blue darken-1"
+                    text
+                    @click="dialog = false"
+                >
+                    Cancelar
+                </v-btn>
+                <v-btn
+                    color="blue darken-1"
+                    text
+                    @click="authenticate"
+                >
+                    Aceptar
+                </v-btn>
             </v-card-actions>
         </v-card>
         </v-dialog>
@@ -119,15 +91,31 @@ export default {
     },
     methods: {
         ...Vuex.mapMutations(['setUsuarioLogueado']),
+        ...Vuex.mapActions(['showSnackbar','showProgressCircle']),
         authenticate: async function (){
-
+            try{
+                        this.showProgressCircle('overlay');
                         const user = await ApiUsers.login(this.usuario, this.password);
+                        console.log(user);
                         if(user){
+                            if(user.id !== 0){
                             this.setUsuarioLogueado(user);
                             this.nombre = user.username;
-                            console.log(user);
+                            this.showProgressCircle(false);
                             this.dialog = false;
+                            this.$router.push('/')
+                            }else
+                            {
+                                this.showProgressCircle(false);
+                                this.showSnackbar({text: "User o Password Incorrect", type:"Error"});                
+                            }
                         }
+            }
+            catch(error){
+                this.showProgressCircle(false);
+                this.showSnackbar({text: error.message, type:"Error"});
+            }
+
         }
     }
 }

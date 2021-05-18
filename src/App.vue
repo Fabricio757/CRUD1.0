@@ -34,21 +34,31 @@
     </v-navigation-drawer>    
     <v-main>
       <router-view/>
+
+  <v-row align="center" justify="center">
+      <v-row justify="center">
+        <v-overlay  z-index="1000" :value="$store.state.progressCircle" >
+          <v-progress-circular :size="50" color="primary" indeterminate ></v-progress-circular>
+          <!-- <v-btn @click="$store.state.progressCircle=false">close</v-btn> -->
+        </v-overlay>
+      </v-row>
+  </v-row>
+
     </v-main>
 
-  <v-footer dark> 
-      <v-card>    
-        <v-card-text class="white--text">
-            {{ new Date().getFullYear() }} —  <strong>CRUD1.0</strong> / {{ this.pageName }}
-        </v-card-text>
-      </v-card>
-      <v-spacer></v-spacer>
-      <v-card>
-        <v-snackbar v-model="$store.state.snackbar.show" :timeout="2000" absolute right shaped :color="snakbarColor" >
-          <label :class="{ snackTextNormal: isNormal, snackTextError: isError }">{{ $store.state.snackbar.text }}</label>
-        </v-snackbar>
-      </v-card>
-  </v-footer>
+    <v-footer dark> 
+        <v-card>    
+          <v-card-text class="white--text">
+              {{ new Date().getFullYear() }} —  <strong>CRUD1.0</strong> / {{ this.pageName }}
+          </v-card-text>
+        </v-card>
+        <v-spacer></v-spacer>
+        <v-card>
+          <v-snackbar v-model="$store.state.snackbar.show" :timeout="2000" absolute right shaped :color="snakbarColor" >
+            <label :class="{ snackTextNormal: isNormal, snackTextError: isError }">{{ $store.state.snackbar.text }}</label>
+          </v-snackbar>
+        </v-card>
+    </v-footer>
 
   </v-app>
 </template>
@@ -69,7 +79,7 @@ export default {
     drawer: true,
   }),
   computed:{
-          ...Vuex.mapState(['pageName']),   
+          ...Vuex.mapState(['pageName','progressCircle']),   
           ...Vuex.mapGetters(['snackbar']),                 
           isNormal() { return (this.$store.state.snackbar.type === 'Normal')},
           isError() { return (this.$store.state.snackbar.type === 'Error')},

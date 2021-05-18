@@ -2,13 +2,24 @@
   <v-data-table
     :headers="headers"
     :items="aves"
+    :search="search"
     class="elevation-1"
+    dark
   >
     <template v-slot:top>
       <v-toolbar
         flat
       >
         <v-toolbar-title>Aves</v-toolbar-title>
+        <v-spacer></v-spacer>
+        <v-text-field
+          v-model="search"
+          append-icon="mdi-magnify"
+          label="Search"
+          single-line
+          hide-details
+        ></v-text-field>
+
         <v-divider
           class="mx-4"
           inset
@@ -141,7 +152,7 @@
         { text: 'Especie', value: 'especie' },
         { text: 'Actions', value: 'actions', sortable: false },
       ],
-      //desserts: [],
+      search: '',
       aves: [],
       editedIndex: -1,
       isItemIdVisible: false,
@@ -181,10 +192,10 @@
 
               var response = await this.animalesAcc.execute();
               if(response.error === "false"){
-                this.aves = response.resultados[0][1];
+                this.aves = response.resultados[0]["R1"];
               }
               else{
-                this.showSnackbar({text: response.resultados[0][1], type:"Error"});
+                this.showSnackbar({text: response.resultados[0]["R1"].Error, type:"Error"});
               }
             }
             catch(error) {
@@ -212,13 +223,13 @@
         this.animalesAcc.resetOperaciones();
         var response = '';
         var args = [];
-        args.push({'id': this.editedItem.id, 'key': 'int'});
+        args.push({'id': this.editedItem.id, 'key': 'INT'});
         //args.push({ 'especie' : this.editedItem.especie, 'type':'string'});
         this.animalesAcc.addOperacion("Delete", "Aves", JSON.stringify(args));
         response = await this.animalesAcc.execute();
 
         if(response.error === "true"){
-           this.showSnackbar({text: response.resultados[0][1], type:"Error"});
+           this.showSnackbar({text: response.resultados[0]["R1"], type:"Error"});
         }else{
           this.showSnackbar({text: "deleted", type:"Normal"});
           this.aves.splice(this.editedIndex, 1)          
@@ -251,8 +262,8 @@
         if (idEdit) {
           this.animalesAcc.resetOperaciones();
           args = [];
-          args.push({'id': this.editedItem.id, 'key': 'int'});
-          args.push({ 'especie' : this.editedItem.especie, 'type':'string'});
+          args.push({'id': this.editedItem.id, 'key': 'INT'});
+          args.push({ 'especie' : this.editedItem.especie, 'type':'VARCHAR'});
           this.animalesAcc.addOperacion("Update", "Aves", JSON.stringify(args));
           response = await this.animalesAcc.execute();
 
@@ -260,12 +271,16 @@
           this.animalesAcc.resetOperaciones();
           args = [];
           //args.push({'id': this.editedItem.id, 'key': 'int'});
-          args.push({ 'especie' : this.editedItem.especie, 'type':'string'});
-          this.animalesAcc.addOperacion("Insert", "Aves", JSON.stringify(args));
-          response = await this.animalesAcc.execute();          
+          args.push({ 'especie' : this.editedItem.especie, 'type':'VARCHAR'});
+          this.animalesAcc.addOperacion("Procedure", "Aves_Insert", JSON.stringify(args));
+          response = await this.animalesAcc.execute();  
+          this.editedItem.id = parseInt(response.resultados[0]["R1"][0].id);
+          console.log(response);        
         }
+
+
         if(response.error === "true"){
-            this.showSnackbar({text: response.resultados[0][1], type:"Error"});           
+            this.showSnackbar({text: response.resultados[0]["R1"], type:"Error"});           
         }else{
           if (idEdit) {
             Object.assign(this.aves[this.editedIndex], this.editedItem);
