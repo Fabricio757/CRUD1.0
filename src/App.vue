@@ -54,8 +54,11 @@
         </v-card>
         <v-spacer></v-spacer>
         <v-card>
-          <v-snackbar v-model="$store.state.snackbar.show" :timeout="2000" absolute right shaped :color="snakbarColor" >
+          <v-snackbar v-model="$store.state.snackbar.show" :timeout="3500" absolute right shaped :color="snakbarColor" >
             <label :class="{ snackTextNormal: isNormal, snackTextError: isError }">{{ $store.state.snackbar.text }}</label>
+            <v-btn icon>
+              <v-icon class="warning" @click="$store.state.snackbar.show=false">X</v-icon>
+            </v-btn>
           </v-snackbar>
         </v-card>
     </v-footer>

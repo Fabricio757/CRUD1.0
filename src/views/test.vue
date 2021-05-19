@@ -2,14 +2,14 @@
 <div>
   <v-data-table
     :headers="headers"
-    :items="aves"
+    :items.sync="aves"
     class="elevation-1"
     dark
-    :page="page"
-    @next="nextPage"
+    :page.sync="l_page"
+    :items-per-page.sync="l_itemsPerPage"
+    :server-items-length="serveritemslength"
   >
-  </v-data-table>{{ pageNumber }}
-<v-pagination v-model="pageNumber" :length="7" @next="nextPage" />
+  </v-data-table>
 </div>
 </template>
 
@@ -22,8 +22,11 @@
 
   export default {
     data: () => ({
-      page:2,
-      pageNumber: 1,
+      l_itemsPerPage: 5,
+      l_page: 1,
+      serveritemslength: 0,
+
+
       dialog: false,
       dialogDelete: false,
       headers: [
@@ -54,8 +57,13 @@
       ...Vuex.mapState(['usuarioLogueado', 'pageName']),
       ...Vuex.mapGetters(['animalesAcc']),
       formTitle () {
+        console.log('formTitle');
         return this.editedIndex === -1 ? 'New Item' : 'Edit Item'
-      },
+      },      
+      // suma(){
+      //   this.getAves();
+      //   return this.l_itemsPerPage + this.l_page;
+      // }
     },
 
     watch: {
@@ -65,33 +73,35 @@
       dialogDelete (val) {
         val || this.closeDelete()
       },
+      l_page(){
+        this.getAves();
+      },
     },
     methods: {
        ...Vuex.mapMutations(['setPageName']),
        ...Vuex.mapActions(['showSnackbar']),
-       nextPage: function(){
-         this.pageNumber++;
-       },
        getAves: async function(){
             try{
               this.animalesAcc.resetOperaciones();
-              this.animalesAcc.addOperacion("Seleccion", "Aves", null);
+              var args = [];
+              args.push({'search': '', 'type': 'VARCHAR'});
+              args.push({'pageNumber': this.l_page, 'type': 'INT'});
+              args.push({'itemsPerPage': this.l_itemsPerPage, 'type': 'INT'});
+              this.animalesAcc.addOperacion("Procedure", "getAves", JSON.stringify(args));
 
               var response = await this.animalesAcc.execute();
               if(response.error === "false"){
-                this.aves = response.resultados[0]["R1"];
+                this.aves = response.resultados[0].R1;
+                this.serveritemslength = response.resultados[1].R2[0].totalRows;
               }
               else{
-                this.showSnackbar({text: response.resultados[0]["R1"].Error, type:"Error"});
+                this.showSnackbar({text: response.message, type:"Error"});
               }
             }
             catch(error) {
               this.showSnackbar({text: error.message, type:"Error"});
             }
         },
-      initialize () {
-
-      },
 
       editItem (item) {
         this.editedIndex = this.aves.indexOf(item)
@@ -183,7 +193,7 @@
     },
     mounted:      
       function() { 
-        this.getAves()
+        this.getAves(this.l_page, this.l_itemsPerPage)
         this.setPageName("Aves");
         this.showSnackbar({text: 'Open Aves', type: 'Normal'});
       },

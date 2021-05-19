@@ -1,10 +1,15 @@
 <template>
   <v-data-table
     :headers="headers"
-    :items="aves"
-    :search="search"
     class="elevation-1"
     dark
+    :items.sync="aves"
+    :page.sync="page"
+    :items-per-page.sync="itemsPerPage"
+    :server-items-length="serveritemslength"
+
+    :sort-by.sync="sortby"
+    :sort-desc.sync="sortdesc"
   >
     <template v-slot:top>
       <v-toolbar
@@ -140,6 +145,13 @@
 
   export default {
     data: () => ({
+      page: 1,
+      itemsPerPage: 5,
+      serveritemslength: 0,    
+      sortby: ['id'],
+      sortdesc: [true],
+      
+
       dialog: false,
       dialogDelete: false,
       headers: [
@@ -181,29 +193,49 @@
       dialogDelete (val) {
         val || this.closeDelete()
       },
+      page(){
+        this.getAves();
+      },
+      itemsPerPage(){
+        this.getAves();
+      },
+      search(){
+        this.getAves();
+      },
+      sortby(){
+        this.getAves();
+      },
+      sortdesc(){
+        this.getAves();
+      },
     },
     methods: {
        ...Vuex.mapMutations(['setPageName']),
        ...Vuex.mapActions(['showSnackbar']),
+
        getAves: async function(){
-            try{
-              this.animalesAcc.resetOperaciones();
-              this.animalesAcc.addOperacion("Seleccion", "Aves", null);
+          try{
+            this.animalesAcc.resetOperaciones();
+            var args = [];
+            args.push({'search': this.search, 'type': 'VARCHAR'});
+            args.push({'pageNumber': this.page, 'type': 'INT'});
+            args.push({'itemsPerPage': this.itemsPerPage, 'type': 'INT'});
+            args.push({'sortby': this.sortby[0], 'type': 'VARCHAR'});
+            args.push({'sortdesc': (this.sortdesc[0] ? 'ASC':'DESC'), 'type': 'VARCHAR'});
+            this.animalesAcc.addOperacion("Procedure", "getAves", JSON.stringify(args));
 
-              var response = await this.animalesAcc.execute();
-              if(response.error === "false"){
-                this.aves = response.resultados[0]["R1"];
-              }
-              else{
-                this.showSnackbar({text: response.resultados[0]["R1"].Error, type:"Error"});
-              }
+            var response = await this.animalesAcc.execute();
+            if(response.error === "false"){
+              this.aves = response.resultados[0].R1;
+              this.serveritemslength = response.resultados[1].R2[0].totalRows;
             }
-            catch(error) {
-              this.showSnackbar({text: error.message, type:"Error"});
+            else{
+              this.showSnackbar({text: response.message, type:"Error"});
             }
-        },
-      initialize () {
-
+          }
+          catch(error) {
+            this.showSnackbar({text: error.message, type:"Error"});
+          }
       },
 
       editItem (item) {

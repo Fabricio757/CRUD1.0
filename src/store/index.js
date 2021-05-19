@@ -74,21 +74,21 @@ let Acceso = class {
                 console.log(response.status);
                 args.push({'error': response.statusText});
                 console.log(response.statusText);
-                return {"resultados": [{"R1": {"Error": response.statusText}}], "error": "true"};
+                return {"message": response.statusText, "error": "true"};
               }
               const json = await response.json();
               return json;
             
           } else 
           {
-              return {"resultados": [{"R1": {"Error": "login failed"}}], "error": "true"};
+              return {"message": "login failed", "error": "true"};
           }
        }
     catch(error)
     {      
       args.push({'error': error.message});
       console.log(error.message);
-      return {"resultados": [{"R1": {"Error": JSON.stringify(args)}}], "error": "true"};
+      return {"message": JSON.stringify(args), "error": "true"};
     }
   }
 };
