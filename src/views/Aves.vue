@@ -3,11 +3,11 @@
     :headers="headers"
     class="elevation-1"
     dark
-    :items.sync="aves"
+    :items.sync="items"
     :page.sync="page"
     :items-per-page.sync="itemsPerPage"
     :server-items-length="serveritemslength"
-
+    :multi-sort=false
     :sort-by.sync="sortby"
     :sort-desc.sync="sortdesc"
   >
@@ -33,7 +33,7 @@
         <v-spacer></v-spacer>
         <v-dialog
           v-model="dialog"
-          max-width="500px"
+          max-width="900px"
         >
           <template v-slot:activator="{ on, attrs }">
             <v-btn
@@ -128,7 +128,7 @@
     <template v-slot:no-data>
       <v-btn
         color="primary"
-        @click="initialize"
+        @click="this.getItems()"
       >
         Reset
       </v-btn>
@@ -150,7 +150,11 @@
       serveritemslength: 0,    
       sortby: ['id'],
       sortdesc: [true],
+      lastSortBy: 'id',
+      lastSortDesc: true,
+      newOrderCol: true,
       
+      checkbox: true,
 
       dialog: false,
       dialogDelete: false,
@@ -158,14 +162,16 @@
         {
           text: 'Id',
           align: 'start',
-          sortable: false,
+          sortable: true,
           value: 'id',
         },
         { text: 'Especie', value: 'especie' },
+
         { text: 'Actions', value: 'actions', sortable: false },
       ],
       search: '',
-      aves: [],
+      items: [],
+      itemPatas: [0, 2, 4],
       editedIndex: -1,
       isItemIdVisible: false,
       editedItem: {
@@ -177,7 +183,7 @@
         especie: '',
       },
     }),
-
+    lastsortDesc: true,
     computed: {
       ...Vuex.mapState(['usuarioLogueado', 'pageName']),
       ...Vuex.mapGetters(['animalesAcc']),
@@ -194,39 +200,66 @@
         val || this.closeDelete()
       },
       page(){
-        this.getAves();
+        this.getItems();
       },
       itemsPerPage(){
-        this.getAves();
+        this.getItems();
       },
       search(){
-        this.getAves();
+        this.getItems();
       },
-      sortby(){
-        this.getAves();
+      sortby(){        
+        console.log("click sortby: " + this.sortby);
+        this.newOrderCol = false;
+        if(this.sortby[0]){
+          if (this.sortby[0] != this.lastSortBy){
+            this.newOrderCol = true;
+            this.lastSortBy = this.sortby[0];
+            this.lastSortDesc = "false";
+            console.log("Col: " + this.lastSortBy);
+            //console.log(this.lastSortDesc);
+            this.getItems();
+          }
+        }          
       },
       sortdesc(){
-        this.getAves();
+        console.log("click sortdesc: " + this.sortdesc[0]);
+        //this.lastSortDesc = !this.lastSortDesc;
+        if (! this.newOrderCol){            
+            if(this.sortdesc[0] == true){
+              this.lastSortDesc = true;
+              this.getItems();
+            }
+            if(this.sortdesc[0] == false){
+              this.lastSortDesc = false;
+              this.getItems();
+            }
+        }else{
+          this.lastSortDesc = true;
+          this.getItems();
+        }
+
+        this.newOrderCol = false;
       },
     },
     methods: {
        ...Vuex.mapMutations(['setPageName']),
        ...Vuex.mapActions(['showSnackbar']),
 
-       getAves: async function(){
+       getItems: async function(){
           try{
             this.animalesAcc.resetOperaciones();
             var args = [];
             args.push({'search': this.search, 'type': 'VARCHAR'});
             args.push({'pageNumber': this.page, 'type': 'INT'});
             args.push({'itemsPerPage': this.itemsPerPage, 'type': 'INT'});
-            args.push({'sortby': this.sortby[0], 'type': 'VARCHAR'});
-            args.push({'sortdesc': (this.sortdesc[0] ? 'ASC':'DESC'), 'type': 'VARCHAR'});
+            args.push({'sortby': this.lastSortBy, 'type': 'VARCHAR'});
+            args.push({'sortdesc': (this.lastSortDesc ? 'DESC' : 'ASC'), 'type': 'VARCHAR'});
             this.animalesAcc.addOperacion("Procedure", "getAves", JSON.stringify(args));
 
             var response = await this.animalesAcc.execute();
             if(response.error === "false"){
-              this.aves = response.resultados[0].R1;
+              this.items = response.resultados[0].R1;
               this.serveritemslength = response.resultados[1].R2[0].totalRows;
             }
             else{
@@ -239,14 +272,14 @@
       },
 
       editItem (item) {
-        this.editedIndex = this.aves.indexOf(item)
+        this.editedIndex = this.items.indexOf(item)
         this.editedItem = Object.assign({}, item)
         this.isItemIdVisible = true
         this.dialog = true
       },
 
       deleteItem (item) {
-        this.editedIndex = this.aves.indexOf(item)
+        this.editedIndex = this.items.indexOf(item)
         this.editedItem = Object.assign({}, item)
         this.dialogDelete = true
       },
@@ -256,15 +289,15 @@
         var response = '';
         var args = [];
         args.push({'id': this.editedItem.id, 'key': 'INT'});
-        //args.push({ 'especie' : this.editedItem.especie, 'type':'string'});
+        
         this.animalesAcc.addOperacion("Delete", "Aves", JSON.stringify(args));
         response = await this.animalesAcc.execute();
 
         if(response.error === "true"){
-           this.showSnackbar({text: response.resultados[0]["R1"], type:"Error"});
+           this.showSnackbar({text: response.message, type:"Error"});
         }else{
           this.showSnackbar({text: "deleted", type:"Normal"});
-          this.aves.splice(this.editedIndex, 1)          
+          this.items.splice(this.editedIndex, 1)          
         }
         
         this.closeDelete()
@@ -288,49 +321,58 @@
       },
 
       async save () {
+
         var response = '';
         var args = [];
-        var idEdit = (this.editedIndex > -1 ? true : false);
-        if (idEdit) {
-          this.animalesAcc.resetOperaciones();
-          args = [];
-          args.push({'id': this.editedItem.id, 'key': 'INT'});
-          args.push({ 'especie' : this.editedItem.especie, 'type':'VARCHAR'});
-          this.animalesAcc.addOperacion("Update", "Aves", JSON.stringify(args));
-          response = await this.animalesAcc.execute();
+          try{
+            var idEdit = (this.editedIndex > -1 ? true : false);
+            if (idEdit) {
+              this.animalesAcc.resetOperaciones();
+              args = [];
+              args.push({'id': this.editedItem.id, 'key': 'INT'});
+              args.push({ 'especie' : this.editedItem.especie, 'type':'VARCHAR'});
+              this.animalesAcc.addOperacion("Update", "Aves", JSON.stringify(args));
+              response = await this.animalesAcc.execute();
 
-        } else {
-          this.animalesAcc.resetOperaciones();
-          args = [];
-          //args.push({'id': this.editedItem.id, 'key': 'int'});
-          args.push({ 'especie' : this.editedItem.especie, 'type':'VARCHAR'});
-          this.animalesAcc.addOperacion("Procedure", "Aves_Insert", JSON.stringify(args));
-          response = await this.animalesAcc.execute();  
-          this.editedItem.id = parseInt(response.resultados[0]["R1"][0].id);
-          console.log(response);        
-        }
+            } else {
+              this.animalesAcc.resetOperaciones();
+              args = [];
+              //args.push({'id': this.editedItem.id, 'key': 'int'});
+              args.push({ 'especie' : this.editedItem.especie, 'type':'VARCHAR'});
+              this.animalesAcc.addOperacion("Procedure", "Aves_Insert", JSON.stringify(args));
+              response = await this.animalesAcc.execute();  
+              if(response.error == "false")
+                this.editedItem.id = parseInt(response.resultados[0]["R1"][0].id);
+            }
 
+            if(response.error === "true"){
+                this.showSnackbar({text: response.message, type:"Error"});          
+            }else{
+              if (idEdit) {
+                Object.assign(this.items[this.editedIndex], this.editedItem);
+                this.showSnackbar({text: "saved", type:"Normal"});
+              }else
+              {
+                this.items.push(this.editedItem);
+                this.showSnackbar({text: "added", type:"Normal"});
+              }
+            }
+            this.close()
+          } 
+          catch(error){
+            this.showSnackbar({text: error, type:"Error"});
+          }       
 
-        if(response.error === "true"){
-            this.showSnackbar({text: response.resultados[0]["R1"], type:"Error"});           
-        }else{
-          if (idEdit) {
-            Object.assign(this.aves[this.editedIndex], this.editedItem);
-            this.showSnackbar({text: "saved", type:"Normal"});
-          }else
-          {
-            this.aves.push(this.editedItem);
-            this.showSnackbar({text: "added", type:"Normal"});
-          }
-        }
-        this.close()
       },
     },
     mounted:      
       function() { 
-        this.getAves()
+        this.getItems()
         this.setPageName("Aves");
         this.showSnackbar({text: 'Open Aves', type: 'Normal'});
       },
   }
+
+
+
 </script>

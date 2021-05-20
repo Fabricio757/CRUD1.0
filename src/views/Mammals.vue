@@ -1,9 +1,15 @@
 <template>
   <v-data-table
     :headers="headers"
-    :items="mammals"
-    :search="search"
     class="elevation-1"
+    dark
+    :items.sync="items"
+    :page.sync="page"
+    :items-per-page.sync="itemsPerPage"
+    :server-items-length="serveritemslength"
+    :multi-sort=false
+    :sort-by.sync="sortby"
+    :sort-desc.sync="sortdesc"
   >
     <template v-slot:top>
       <v-toolbar
@@ -27,7 +33,7 @@
         <v-spacer></v-spacer>
         <v-dialog
           v-model="dialog"
-          max-width="500px"
+          max-width="900px"
         >
           <template v-slot:activator="{ on, attrs }">
             <v-btn
@@ -65,10 +71,56 @@
                   >
                     <v-text-field
                       v-model="editedItem.nombre"
-                      label="Nombre"
+                      label="Especie"
                     ></v-text-field>
                   </v-col>
+                  <v-col
+                    cols="12"
+                    sm="6"
+                    md="4"
+                  >
+                    <v-select
+                      v-model="editedItem.cantidadPatas"
+                      :items="itemPatas"
+                      label="Cantidad de Patas"
+                      dense
+                  ></v-select>
+                  </v-col>
                 </v-row>
+
+                <v-row>
+                  <v-col
+                    cols="12"
+                    sm="6"
+                    md="4"
+                  >
+                    <v-checkbox
+                      v-model="editedItem.oviparo"
+                      label="Oviparo"
+                    ></v-checkbox>
+                  </v-col>
+                  <v-col
+                    cols="12"
+                    sm="6"
+                    md="4"
+                  >
+                    <v-checkbox
+                      v-model="editedItem.volador"
+                      label="Volador"
+                    ></v-checkbox>
+                  </v-col>
+                  <v-col
+                    cols="12"
+                    sm="6"
+                    md="4"
+                  >
+                    <v-checkbox
+                      v-model="editedItem.marino"
+                      label="Marino"
+                    ></v-checkbox>
+                  </v-col>                  
+                </v-row>
+
               </v-container>
             </v-card-text>
 
@@ -122,7 +174,7 @@
     <template v-slot:no-data>
       <v-btn
         color="primary"
-        @click="initialize"
+        @click="this.getItems()"
       >
         Reset
       </v-btn>
@@ -139,32 +191,57 @@
 
   export default {
     data: () => ({
+      page: 1,
+      itemsPerPage: 5,
+      serveritemslength: 0,    
+      sortby: ['id'],
+      sortdesc: [true],
+      lastSortBy: 'id',
+      lastSortDesc: true,
+      newOrderCol: true,
+      
+      checkbox: true,
+
       dialog: false,
       dialogDelete: false,
       headers: [
         {
           text: 'Id',
           align: 'start',
-          sortable: false,
+          sortable: true,
           value: 'id',
         },
-        { text: 'Nombre', value: 'nombre' },
+        { text: 'Especie', value: 'nombre' },
+        { text: 'Cantidad Patas', value: 'cantidadPatas' },
+        { text: 'Oviparo', value: 'oviparo' },
+        { text: 'Volador', value: 'volador' },
+        { text: 'Marino', value: 'marino' },
+
         { text: 'Actions', value: 'actions', sortable: false },
       ],
       search: '',
-      mammals: [],
+      items: [],
+      itemPatas: [0, 2, 4],
       editedIndex: -1,
       isItemIdVisible: false,
       editedItem: {
         id: 0,
-        nombre: '',
+        especie: '',
+        cantidadPatas: 0,
+        marino: false,
+        volador: false,
+        oviparo: false,
       },
       defaultItem: {
         id: 0,
-        nombre: '',
+        especie: '',
+        cantidadPatas: 0,
+        marino: false,
+        volador: false,
+        oviparo: false,        
       },
     }),
-
+    lastsortDesc: true,
     computed: {
       ...Vuex.mapState(['usuarioLogueado', 'pageName']),
       ...Vuex.mapGetters(['animalesAcc']),
@@ -180,40 +257,87 @@
       dialogDelete (val) {
         val || this.closeDelete()
       },
+      page(){
+        this.getItems();
+      },
+      itemsPerPage(){
+        this.getItems();
+      },
+      search(){
+        this.getItems();
+      },
+      sortby(){        
+        console.log("click sortby: " + this.sortby);
+        this.newOrderCol = false;
+        if(this.sortby[0]){
+          if (this.sortby[0] != this.lastSortBy){
+            this.newOrderCol = true;
+            this.lastSortBy = this.sortby[0];
+            this.lastSortDesc = "false";
+            console.log("Col: " + this.lastSortBy);
+            //console.log(this.lastSortDesc);
+            this.getItems();
+          }
+        }          
+      },
+      sortdesc(){
+        console.log("click sortdesc: " + this.sortdesc[0]);
+        //this.lastSortDesc = !this.lastSortDesc;
+        if (! this.newOrderCol){            
+            if(this.sortdesc[0] == true){
+              this.lastSortDesc = true;
+              this.getItems();
+            }
+            if(this.sortdesc[0] == false){
+              this.lastSortDesc = false;
+              this.getItems();
+            }
+        }else{
+          this.lastSortDesc = true;
+          this.getItems();
+        }
+
+        this.newOrderCol = false;
+      },
     },
     methods: {
        ...Vuex.mapMutations(['setPageName']),
        ...Vuex.mapActions(['showSnackbar']),
-       getMammals: async function(){
-            try{
-              this.animalesAcc.resetOperaciones();
-              this.animalesAcc.addOperacion("Seleccion", "Mamiferos", null);
 
-              var response = await this.animalesAcc.execute();
-              if(response.error === "false"){
-                this.mammals = response.resultados[0]["R1"];
-              }
-              else{
-                this.showSnackbar({text: response.resultados[0]["R1"].Error, type:"Error"});
-              }
-            }
-            catch(error) {
-              this.showSnackbar({text: error.message, type:"Error"});
-            }
-        },
-      initialize () {
+       getItems: async function(){
+          try{
+            this.animalesAcc.resetOperaciones();
+            var args = [];
+            args.push({'search': this.search, 'type': 'VARCHAR'});
+            args.push({'pageNumber': this.page, 'type': 'INT'});
+            args.push({'itemsPerPage': this.itemsPerPage, 'type': 'INT'});
+            args.push({'sortby': this.lastSortBy, 'type': 'VARCHAR'});
+            args.push({'sortdesc': (this.lastSortDesc ? 'DESC' : 'ASC'), 'type': 'VARCHAR'});
+            this.animalesAcc.addOperacion("Procedure", "getMamiferos", JSON.stringify(args));
 
+            var response = await this.animalesAcc.execute();
+            if(response.error === "false"){
+              this.items = response.resultados[0].R1;
+              this.serveritemslength = response.resultados[1].R2[0].totalRows;
+            }
+            else{
+              this.showSnackbar({text: response.message, type:"Error"});
+            }
+          }
+          catch(error) {
+            this.showSnackbar({text: error.message, type:"Error"});
+          }
       },
 
       editItem (item) {
-        this.editedIndex = this.mammals.indexOf(item)
+        this.editedIndex = this.items.indexOf(item)
         this.editedItem = Object.assign({}, item)
         this.isItemIdVisible = true
         this.dialog = true
       },
 
       deleteItem (item) {
-        this.editedIndex = this.mammals.indexOf(item)
+        this.editedIndex = this.items.indexOf(item)
         this.editedItem = Object.assign({}, item)
         this.dialogDelete = true
       },
@@ -223,14 +347,15 @@
         var response = '';
         var args = [];
         args.push({'id': this.editedItem.id, 'key': 'INT'});
+        
         this.animalesAcc.addOperacion("Delete", "Mamiferos", JSON.stringify(args));
         response = await this.animalesAcc.execute();
 
         if(response.error === "true"){
-           this.showSnackbar({text: response.resultados[0]["R1"], type:"Error"});
+           this.showSnackbar({text: response.message, type:"Error"});
         }else{
           this.showSnackbar({text: "deleted", type:"Normal"});
-          this.mammals.splice(this.editedIndex, 1)          
+          this.items.splice(this.editedIndex, 1)          
         }
         
         this.closeDelete()
@@ -254,49 +379,67 @@
       },
 
       async save () {
+
         var response = '';
         var args = [];
-        var idEdit = (this.editedIndex > -1 ? true : false);
-        if (idEdit) {
-          this.animalesAcc.resetOperaciones();
-          args = [];
-          args.push({'id': this.editedItem.id, 'key': 'INT'});
-          args.push({ 'nombre' : this.editedItem.nombre, 'type':'VARCHAR'});
-          this.animalesAcc.addOperacion("Update", "Mamiferos", JSON.stringify(args));
-          response = await this.animalesAcc.execute();
+          try{
+            var idEdit = (this.editedIndex > -1 ? true : false);
+            if (idEdit) {
+              this.animalesAcc.resetOperaciones();
+              args = [];
+              args.push({'id': this.editedItem.id, 'key': 'INT'});
+              args.push({ 'nombre' : this.editedItem.nombre, 'type':'VARCHAR'});
+              args.push({ 'cantidadPatas' : this.editedItem.cantidadPatas, 'type':'INT'});
+              args.push({ 'oviparo' : this.editedItem.oviparo, 'type':'BIT'});
+              args.push({ 'marino' : this.editedItem.marino, 'type':'BIT'});
+              args.push({ 'volador' : this.editedItem.volador, 'type':'BIT'});
+              this.animalesAcc.addOperacion("Update", "Mamiferos", JSON.stringify(args));
+              response = await this.animalesAcc.execute();
 
-        } else {
-          this.animalesAcc.resetOperaciones();
-          args = [];
-          //args.push({'id': this.editedItem.id, 'key': 'int'});
-          args.push({ 'nombre' : this.editedItem.nombre, 'type':'VARCHAR'});
-          this.animalesAcc.addOperacion("Procedure", "Mamiferos_Insert", JSON.stringify(args));
-          response = await this.animalesAcc.execute();  
-          this.editedItem.id = parseInt(response.resultados[0]["R1"][0].id);
-          console.log(response);        
-        }
+            } else {
+              this.animalesAcc.resetOperaciones();
+              args = [];
+              //args.push({'id': this.editedItem.id, 'key': 'int'});
+              args.push({ 'nombre' : this.editedItem.nombre, 'type':'VARCHAR'});
+              args.push({ 'cantidadPatas' : this.editedItem.cantidadPatas, 'type':'INT'});
+              args.push({ 'oviparo' : this.editedItem.oviparo, 'type':'BIT'});
+              args.push({ 'marino' : this.editedItem.marino, 'type':'BIT'});
+              args.push({ 'volador' : this.editedItem.volador, 'type':'BIT'});
 
+              this.animalesAcc.addOperacion("Procedure", "Mamiferos_Insert", JSON.stringify(args));
+              response = await this.animalesAcc.execute();  
+              if(response.error === "false")
+                this.editedItem.id = parseInt(response.resultados[0]["R1"][0].id);
+            }
 
-        if(response.error === "true"){
-            this.showSnackbar({text: response.resultados[0]["R1"], type:"Error"});           
-        }else{
-          if (idEdit) {
-            Object.assign(this.mammals[this.editedIndex], this.editedItem);
-            this.showSnackbar({text: "saved", type:"Normal"});
-          }else
-          {
-            this.mammals.push(this.editedItem);
-            this.showSnackbar({text: "added", type:"Normal"});
-          }
-        }
-        this.close()
+            if(response.error === "true"){
+                this.showSnackbar({text: response.message, type:"Error"});          
+            }else{
+              if (idEdit) {
+                Object.assign(this.items[this.editedIndex], this.editedItem);
+                this.showSnackbar({text: "saved", type:"Normal"});
+              }else
+              {
+                this.items.push(this.editedItem);
+                this.showSnackbar({text: "added", type:"Normal"});
+              }
+            }
+            this.close()
+          } 
+          catch(error){
+            this.showSnackbar({text: error, type:"Error"});
+          }       
+
       },
     },
     mounted:      
       function() { 
-        this.getMammals()
+        this.getItems()
         this.setPageName("Mamíferos");
         this.showSnackbar({text: 'Open Mamíferos', type: 'Normal'});
       },
   }
+
+
+
 </script>

@@ -56,7 +56,6 @@ let Acceso = class {
           if(this.usuarioLogueado)
           {
               var inputText = this.prepareBody(inputText);
-              console.log(inputText);
               let myvalue =JSON.stringify(inputText);
 
               const requestOptions = {
@@ -71,9 +70,7 @@ let Acceso = class {
               const response = await fetch(Principal.END_POINT + "Db/Input", requestOptions);
               if(response.status !== 200)
               {
-                console.log(response.status);
                 args.push({'error': response.statusText});
-                console.log(response.statusText);
                 return {"message": response.statusText, "error": "true"};
               }
               const json = await response.json();
@@ -87,7 +84,6 @@ let Acceso = class {
     catch(error)
     {      
       args.push({'error': error.message});
-      console.log(error.message);
       return {"message": JSON.stringify(args), "error": "true"};
     }
   }
@@ -123,8 +119,6 @@ export default new Vuex.Store({
   },
   actions: {
     showProgressCircle({commit}, value) {      
-      //var valor = (value ? 'overlay' : 'false');
-      console.log(value);
       commit('SET_PROGRESSCIRCLE', value);
     },
     showSnackbar({commit}, snackbar) {
