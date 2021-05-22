@@ -1,5 +1,5 @@
 
-import { Principal } from "./Endpoint";
+//import { Config } from "./Config";
 import axios from "axios";
 
 import Vue from 'vue'
@@ -8,14 +8,14 @@ Vue.use(Vuex)
 
 
 export default {
-    login: async function(usuario, password){
+    login: async function(usuario, password,end_point){
         let requestAxiosOptions = {
             username: usuario,
             password: password
         };
 
         try{
-            let response = await axios.post(Principal.END_POINT + "users/authenticate", requestAxiosOptions)
+            let response = await axios.post(end_point + "users/authenticate", requestAxiosOptions)
             return response.data;
         }
         catch (error) {

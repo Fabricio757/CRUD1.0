@@ -87,7 +87,7 @@ export default {
     },
 
     computed: {
-        ...Vuex.mapState(['usuarioLogueado']),
+        ...Vuex.mapState(['usuarioLogueado','globalConfig']),
     },
     methods: {
         ...Vuex.mapMutations(['setUsuarioLogueado']),
@@ -95,27 +95,30 @@ export default {
         authenticate: async function (){
             try{
                         this.showProgressCircle('overlay');
-                        const user = await ApiUsers.login(this.usuario, this.password);
-                        console.log(user);
-                        if(user){
+                        const user = await ApiUsers.login(this.usuario, this.password, this.globalConfig.END_POINT);
+                        console.log(user);                        
+                        if(! user.isAxiosError){
                             if(user.id !== 0){
                             this.setUsuarioLogueado(user);
                             this.nombre = user.username;
                             this.showProgressCircle(false);
                             this.dialog = false;
-                            this.$router.push('/')
+                            //this.$router.push('/')
                             }else
                             {
                                 this.showProgressCircle(false);
                                 this.showSnackbar({text: "User o Password Incorrect", type:"Error"});                
                             }
+                        }else{
+                            this.showProgressCircle(false);
+                            this.showSnackbar({text: user.response.data, type:"Error"});
                         }
             }
             catch(error){
                 this.showProgressCircle(false);
                 this.showSnackbar({text: error.message, type:"Error"});
             }
-
+            this.showProgressCircle(false);
         }
     }
 }

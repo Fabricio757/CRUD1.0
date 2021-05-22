@@ -1,6 +1,7 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
-import { Principal } from "../api/Endpoint";
+//import { Principal } from "../api/Endpoint";
+//import { Config } from "../api/Config";
 
 
 Vue.use(Vuex);
@@ -11,6 +12,7 @@ let Acceso = class {
     this.BaseDatos = base;
     this.operaciones = [];
     this.UsuarioLogueado = '';
+    this.end_point = '';
   }
   addOperacion (operacion, tabla, args)
   {
@@ -67,7 +69,7 @@ let Acceso = class {
                   body: myvalue
               };
       
-              const response = await fetch(Principal.END_POINT + "Db/Input", requestOptions);
+              const response = await fetch(this.end_point + "Db/Input", requestOptions);
               if(response.status !== 200)
               {
                 args.push({'error': response.statusText});
@@ -92,14 +94,18 @@ let Acceso = class {
 export default new Vuex.Store({
   state: {
     usuarioLogueado: "",
+    globalConfig: {},
     animales: new Acceso("'TestDB'"),
     pageName: "default",
     snackbar: {"show":false},
     progressCircle: false,
   },
   getters: {
-      animalesAcc: state => { state.animales.usuarioLogueado = state.usuarioLogueado; return state.animales },
-      //snackbar: state => {return state.snackbar},
+      animalesAcc: state => { 
+                              state.animales.usuarioLogueado = state.usuarioLogueado; 
+                              state.animales.end_point = state.globalConfig.END_POINT; 
+                              return state.animales },
+      globalConfig: state => {return state.globalConfig},
   },
   mutations: {
     setUsuarioLogueado (state, user) {
@@ -108,6 +114,9 @@ export default new Vuex.Store({
     },
     setPageName (state, pagename) {
       state.pageName = pagename;
+    },  
+    setGlobalConfig (state, config) {
+      state.globalConfig = config;
     },    
     SET_PROGRESSCIRCLE (state, value) {
       state.progressCircle = value;

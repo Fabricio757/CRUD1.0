@@ -82,14 +82,16 @@ export default {
     drawer: true,
   }),
   computed:{
-          ...Vuex.mapState(['pageName','progressCircle']),   
-          ...Vuex.mapGetters(['snackbar']),                 
+          ...Vuex.mapState(['pageName','progressCircle','globalConfig']),   
+          ...Vuex.mapGetters(['snackbar']),  
+                         
           isNormal() { return (this.$store.state.snackbar.type === 'Normal')},
           isError() { return (this.$store.state.snackbar.type === 'Error')},
           snakbarColor() { return (this.$store.state.snackbar.type === 'Normal' ? "primary" : "error")},
   },
   methods:{
     ...Vuex.mapActions(['showSnackbar']),
+    ...Vuex.mapMutations(['setGlobalConfig']),
   },
   mutations: {
 
@@ -97,6 +99,11 @@ export default {
   mounted: function() {
 
   },
+  created: async function(){
+    const res = await fetch(process.env.BASE_URL + "config.json");
+    const config = await res.json();
+    this.setGlobalConfig(config);    
+  }
 };
 </script>
 
